@@ -6,16 +6,47 @@ SCREEN_W = 800
 SCREEN_H = 800
 SQUARE_SIZE = SCREEN_W // 8
 
-BOARD = [
-    ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"], 
-    ["bP", "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
-    [None,None,None,None,None,None,None,None],
-    [None,None,None,None,None,None,None,None],
-    [None,None,None,None,None,None,None,None],
-    [None,None,None,None,None,None,None,None],
-    ["wP", "wP", "wP", "wP", "wP", "wP", "wP", "wP"],
-    ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"] 
+class Piece:
+    def __init__(self, color, kind):
+        self.color = color
+        self.kind = kind
+
+    def get_piece_color(self):
+        return self.color
+
+    def get_piece_kind(self):
+        return self.kind
+
+    def __str__(self):
+        return f"{self.color}{self.kind}"
+
+DEFAULT_START_POS = [
+    [Piece("b","R"), Piece("b","N"), Piece("b","B"), Piece("b","Q"), Piece("b","K"), Piece("b","B"), Piece("b","N"), Piece("b","R")],
+    [Piece("b","P") for _ in range(8)],
+    [None] * 8,
+    [None] * 8,
+    [None] * 8,
+    [None] * 8,
+    [Piece("w","P") for _ in range(8)],
+    [Piece("w","R"), Piece("w","N"), Piece("w","B"), Piece("w","Q"), Piece("w","K"), Piece("w","B"), Piece("w","N"), Piece("w","R")]
 ]
+
+class Board:
+    def __init__(self, piece_imgs, start_pos):
+        self.grid = start_pos 
+        self.piece_imgs = piece_imgs
+
+    def handle_input(self, e):
+        pass
+
+    def update(self):
+        pass
+
+    def draw(self, screen):
+        for i, row in enumerate(self.grid):
+            for j, col in enumerate(row):
+                if col:
+                    screen.blit(self.piece_imgs[str(col)], (j*SQUARE_SIZE, i*SQUARE_SIZE))
 
 def main():
     pygame.init()
@@ -40,20 +71,18 @@ def main():
             scaled_img = pygame.transform.scale(piece_img, (SQUARE_SIZE, SQUARE_SIZE))
             piece_imgs[piece] = scaled_img
 
+    board = Board(piece_imgs, DEFAULT_START_POS)
+
     running = True
     while running:
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False
                 break
-
+            board.handle_input(e)
         screen.blit(board_img, (0,0))
-
-        for i, row in enumerate(BOARD):
-            for j, col in enumerate(row):
-                if col:
-                    screen.blit(piece_imgs[col], (j*SQUARE_SIZE, i*SQUARE_SIZE))
-
+        board.update()
+        board.draw(screen)
         pygame.display.flip()
         clock.tick(60)
 
@@ -62,3 +91,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

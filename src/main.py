@@ -1,6 +1,5 @@
 import pygame
 import sys
-import copy
 from board import DEFAULT_START_POS
 from states import PlayState
 from constants import SCREEN_W, SCREEN_H
@@ -19,7 +18,7 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.SCALED, vsync=1)
         pygame.display.set_caption("P2 Chess")
 
-        self.state = PlayState(self.assets, copy.deepcopy(DEFAULT_START_POS))
+        self.state = PlayState(self.assets, [row[:] for row in DEFAULT_START_POS])
         self.running = True
 
     def set_state(self, state):

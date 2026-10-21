@@ -17,16 +17,27 @@ class Board:
         self.board_img = board_img 
         self.piece_imgs = piece_imgs
         self.grid = start_pos 
+        self.selected_sq = None
 
-    def handle_input(self, e):
-        pass
+    def is_sq_empty(self, sq):
+        sq_row, sq_col = sq
+        return not self.grid[sq_row][sq_col]
 
-    def update(self):
-        pass
+    def handle_click(self, clicked_sq):
+        if clicked_sq == self.selected_sq or self.is_sq_empty(clicked_sq):
+            self.selected_sq = None
+            return
+        self.selected_sq = clicked_sq
 
     def draw(self, screen):
         screen.blit(self.board_img, (0,0))
+
+        if self.selected_sq:
+            sq_row, sq_col = self.selected_sq
+            pygame.draw.rect(screen, (0,255,0), (sq_col*SQUARE_SIZE, sq_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+
         for i, row in enumerate(self.grid):
             for j, piece in enumerate(row):
                 if piece:
                     screen.blit(self.piece_imgs[piece], (j*SQUARE_SIZE, i*SQUARE_SIZE))
+

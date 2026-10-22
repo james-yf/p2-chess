@@ -1,7 +1,9 @@
 import pygame 
 from constants import SQUARE_SIZE
 
-OVERLAY_COLOR = (0,255,0)
+SELECTED_OVERLAY_COLOR = (0,255,0)
+DRAW_OVERLAY_COLOR = (0,0,255)
+MATE_OVERLAY_COLOR = (255,0,0)
 
 DEFAULT_START_POS = [
     ["bR","bN","bB","bQ","bK","bB","bN","bR"],
@@ -21,6 +23,7 @@ class Board:
         self.grid = start_pos 
         self.selected_sq = None
         self.turn = "w"
+        self.result = None
 
     def piece_at(self, sq):
         if sq is None: 
@@ -189,6 +192,19 @@ class Board:
             return []
         return self.filter_moves(unfiltered_moves)
 
+    def is_game_over(self):
+        legal_moves = []
+        for i, row in enumerate(self.grid):
+            for j, piece in enumerate(row):
+                if self.piece_at_sq_has_color((i,j), self.turn): 
+                    legal_moves += self.legal_moves_for_piece_at((i,j)) 
+        if not legal_moves:
+            if self.is_in_check(self.turn):
+                self.result = "mate"
+                return
+            else:
+                self.result = "draw"
+
     def make_move(self, move):
         legal_moves = self.legal_moves_for_piece_at(move[0]) 
         if move in legal_moves:
@@ -198,7 +214,12 @@ class Board:
             self.grid[start_row][start_col] = None
             self.turn = "w" if self.turn == "b" else "b"
 
+        if self.is_game_over(): 
+            self.game_over = True 
+
     def handle_click(self, clicked_sq):
+        if self.result:
+            return
         if self.selected_sq == clicked_sq:
             self.selected_sq = None
             return
@@ -206,7 +227,7 @@ class Board:
             self.selected_sq = clicked_sq
             return
         if self.selected_sq:
-            self.make_move((self.selected_sq, clicked_sq))
+            self.make_move((self.selected_sq, clicked_sq)) 
             self.selected_sq = None
 
     def draw(self, screen):
@@ -214,7 +235,18 @@ class Board:
 
         if self.selected_sq:
             sq_row, sq_col = self.selected_sq
-            pygame.draw.rect(screen, OVERLAY_COLOR, (sq_col*SQUARE_SIZE, sq_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            pygame.draw.rect(screen, SELECTED_OVERLAY_COLOR, (sq_col*SQUARE_SIZE, sq_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+
+        if self.result == "mate":
+            loser_king_row, loser_king_col = self.find_king(self.turn)
+            pygame.draw.rect(screen, MATE_OVERLAY_COLOR, (loser_king_col*SQUARE_SIZE, loser_king_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            
+        if self.result == "draw":
+            curr_king_row, curr_king_col = self.find_king(self.turn)
+            other_king_color = "b" if self.turn == "w" else "w" 
+            other_king_row, other_king_col = self.find_king(other_king_color)
+            pygame.draw.rect(screen, DRAW_OVERLAY_COLOR, (curr_king_col*SQUARE_SIZE, curr_king_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            pygame.draw.rect(screen, DRAW_OVERLAY_COLOR, (other_king_col*SQUARE_SIZE, other_king_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
         for i, row in enumerate(self.grid):
             for j, piece in enumerate(row):
@@ -224,4 +256,4 @@ class Board:
         if self.selected_sq:
             for mv in self.legal_moves_for_piece_at(self.selected_sq):
                 dest_row, dest_col = mv[1]
-                pygame.draw.circle(screen, OVERLAY_COLOR, (dest_col*SQUARE_SIZE+SQUARE_SIZE//2, dest_row*SQUARE_SIZE+SQUARE_SIZE//2), SQUARE_SIZE//4)
+                pygame.draw.circle(screen, SELECTED_OVERLAY_COLOR, (dest_col*SQUARE_SIZE+SQUARE_SIZE//2, dest_row*SQUARE_SIZE+SQUARE_SIZE//2), SQUARE_SIZE//4)

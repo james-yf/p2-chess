@@ -20,6 +20,7 @@ class Board:
         self.piece_imgs = piece_imgs
         self.grid = start_pos 
         self.selected_sq = None
+        self.turn = "w"
 
     def piece_at(self, sq):
         if sq is None: 
@@ -39,6 +40,9 @@ class Board:
         at_sq = self.piece_at(sq) 
         return None if at_sq is None else at_sq[0]
 
+    def piece_at_sq_has_color(self, sq, color):
+        return self.piece_color_at(sq)==color
+
     def is_sq_empty(self, sq):
         sq_row, sq_col = sq
         return not self.grid[sq_row][sq_col]
@@ -51,7 +55,7 @@ class Board:
         if sq1 is None or sq2 is None: 
             return False
         return self.piece_color_at(sq1)==self.piece_color_at(sq2)
-    
+
     def add_off_to_sq(self, sq, off):
         sq_row, sq_col = sq
         off_row, off_col = off
@@ -185,11 +189,25 @@ class Board:
             return []
         return self.filter_moves(unfiltered_moves)
 
+    def make_move(self, move):
+        legal_moves = self.legal_moves_for_piece_at(move[0]) 
+        if move in legal_moves:
+            start_row, start_col = move[0]
+            dest_row, dest_col = move[1]
+            self.grid[dest_row][dest_col] = self.piece_at(move[0])
+            self.grid[start_row][start_col] = None
+            self.turn = "w" if self.turn == "b" else "b"
+
     def handle_click(self, clicked_sq):
-        if clicked_sq == self.selected_sq or self.is_sq_empty(clicked_sq):
+        if self.selected_sq == clicked_sq:
             self.selected_sq = None
             return
-        self.selected_sq = clicked_sq
+        if self.piece_at_sq_has_color(clicked_sq, self.turn): 
+            self.selected_sq = clicked_sq
+            return
+        if self.selected_sq:
+            self.make_move((self.selected_sq, clicked_sq))
+            self.selected_sq = None
 
     def draw(self, screen):
         screen.blit(self.board_img, (0,0))

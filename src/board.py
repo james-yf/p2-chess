@@ -23,6 +23,7 @@ class Board:
         self.grid = start_pos 
         self.selected_sq = None
         self.turn = "w"
+        self.pwn_2_dest = None 
         self.result = None
 
     def piece_at(self, sq):
@@ -115,6 +116,18 @@ class Board:
         target = self.add_off_to_sq(src_sq, off_cap_r)
         if self.does_sq_exist(target) and not self.is_sq_empty(target) and not self.are_sqs_friendly(src_sq, target):
             moves.append((src_sq, target))
+        
+        #en passant
+        if self.pwn_2_dest and src_sq[0] == self.pwn_2_dest[0]:
+            off_en_col = self.pwn_2_dest[1] - src_sq[1]  
+            if off_en_col == 1:
+                off_cap_r = (-1,1) if pwn_color == "w" else (1,1)
+                target = self.add_off_to_sq(src_sq, off_cap_l)
+                moves.append((src_sq, target))
+            else:
+                off_cap_l = (-1,-1) if pwn_color == "w" else (1,-1)
+                target = self.add_off_to_sq(src_sq, off_cap_l)
+                moves.append((src_sq, target))
 
         return moves
 
@@ -205,11 +218,39 @@ class Board:
             else:
                 self.result = "draw"
 
+    def is_move_pwn_2(self, move):
+        start_sq, dest_sq = move 
+        return self.piece_kind_at(start_sq) == "P" and (dest_sq[0] - start_sq[0]) in (2,-2)
+
+    def is_move_en_passant(self, move):
+        if self.pwn_2_dest is None: 
+            return False
+
+        src_sq, dest_sq = move
+        if self.piece_kind_at(src_sq) != "P":
+            return False
+
+        src_col = src_sq[1]
+        dest_row, dest_col = dest_sq
+        pwn_2_row, pwn_2_col = self.pwn_2_dest
+
+        return src_col != pwn_2_col and dest_row in (pwn_2_row - 1, pwn_2_row + 1) and dest_col == pwn_2_col
+
     def make_move(self, move):
         legal_moves = self.legal_moves_for_piece_at(move[0]) 
         if move in legal_moves:
+            if self.is_move_en_passant(move):
+                self.grid[self.pwn_2_dest[0]][self.pwn_2_dest[1]] = None
+                self.pwn_2_dest = None
+
+            if self.is_move_pwn_2(move):
+                self.pwn_2_dest = move[1] 
+            else:
+                self.pwn_2_dest = None
+
             start_row, start_col = move[0]
             dest_row, dest_col = move[1]
+
             self.grid[dest_row][dest_col] = self.piece_at(move[0])
             self.grid[start_row][start_col] = None
             self.turn = "w" if self.turn == "b" else "b"

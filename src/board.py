@@ -262,6 +262,10 @@ class Board:
     def handle_click(self, clicked_sq):
         if self.result:
             return
+
+        if self.turn == "b":
+            clicked_sq = (7-clicked_sq[0], 7-clicked_sq[1]) 
+
         if self.selected_sq == clicked_sq:
             self.selected_sq = None
             return
@@ -276,7 +280,7 @@ class Board:
         screen.blit(self.board_img, (0,0))
 
         if self.selected_sq:
-            sq_row, sq_col = self.selected_sq
+            sq_row, sq_col = self.selected_sq if self.turn == "w" else (7 - self.selected_sq[0], 7 - self.selected_sq[1])
             pygame.draw.rect(screen, SELECTED_OVERLAY_COLOR, (sq_col*SQUARE_SIZE, sq_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
         if self.result == "mate":
@@ -290,18 +294,35 @@ class Board:
             pygame.draw.rect(screen, DRAW_OVERLAY_COLOR, (curr_king_col*SQUARE_SIZE, curr_king_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
             pygame.draw.rect(screen, DRAW_OVERLAY_COLOR, (other_king_col*SQUARE_SIZE, other_king_row*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
-        for i, row in enumerate(self.grid):
-            for j, piece in enumerate(row):
-                if i == 7:
-                    text_surface = self.font.render(f"{chr(ord('a')+j)}", True, (255, 0, 0))
-                    screen.blit(text_surface, (j*SQUARE_SIZE+0.05*SQUARE_SIZE, i*SQUARE_SIZE+0.75*SQUARE_SIZE))
-                if j == 7:
-                    text_surface = self.font.render(f"{8-i}", True, (255, 0, 0))
-                    screen.blit(text_surface, (j*SQUARE_SIZE+0.85*SQUARE_SIZE, i*SQUARE_SIZE))
-                if piece:
-                    screen.blit(self.piece_imgs[piece], (j*SQUARE_SIZE, i*SQUARE_SIZE))
+        if self.turn == "b":
+            for i, row in enumerate(self.grid):
+                for j, piece in enumerate(row):
+                    if i == 7:
+                        text_surface = self.font.render(f"{chr(ord('h')-j)}", True, (255, 0, 0))
+                        screen.blit(text_surface, (j*SQUARE_SIZE+0.05*SQUARE_SIZE, i*SQUARE_SIZE+0.75*SQUARE_SIZE))
+                    if j == 7:
+                        text_surface = self.font.render(f"{1+i}", True, (255, 0, 0))
+                        screen.blit(text_surface, (j*SQUARE_SIZE+0.85*SQUARE_SIZE, i*SQUARE_SIZE))
+                    if piece:
+                        screen.blit(self.piece_imgs[piece], ((7-j)*SQUARE_SIZE, (7-i)*SQUARE_SIZE))
+        else:
+            for i, row in enumerate(self.grid):
+                for j, piece in enumerate(row):
+                    if i == 7:
+                        text_surface = self.font.render(f"{chr(ord('a')+j)}", True, (255, 0, 0))
+                        screen.blit(text_surface, (j*SQUARE_SIZE+0.05*SQUARE_SIZE, i*SQUARE_SIZE+0.75*SQUARE_SIZE))
+                    if j == 7:
+                        text_surface = self.font.render(f"{8-i}", True, (255, 0, 0))
+                        screen.blit(text_surface, (j*SQUARE_SIZE+0.85*SQUARE_SIZE, i*SQUARE_SIZE))
+                    if piece:
+                        screen.blit(self.piece_imgs[piece], (j*SQUARE_SIZE, i*SQUARE_SIZE))
 
         if self.selected_sq:
-            for mv in self.legal_moves_for_piece_at(self.selected_sq):
-                dest_row, dest_col = mv[1]
-                pygame.draw.circle(screen, SELECTED_OVERLAY_COLOR, (dest_col*SQUARE_SIZE+SQUARE_SIZE//2, dest_row*SQUARE_SIZE+SQUARE_SIZE//2), SQUARE_SIZE//4)
+            if self.turn == "b":
+                for mv in self.legal_moves_for_piece_at(self.selected_sq):
+                    dest_row, dest_col = mv[1]
+                    pygame.draw.circle(screen, SELECTED_OVERLAY_COLOR, ((7-dest_col)*SQUARE_SIZE+SQUARE_SIZE//2, (7-dest_row)*SQUARE_SIZE+SQUARE_SIZE//2), SQUARE_SIZE//4)
+            else:
+                for mv in self.legal_moves_for_piece_at(self.selected_sq):
+                    dest_row, dest_col = mv[1]
+                    pygame.draw.circle(screen, SELECTED_OVERLAY_COLOR, (dest_col*SQUARE_SIZE+SQUARE_SIZE//2, dest_row*SQUARE_SIZE+SQUARE_SIZE//2), SQUARE_SIZE//4)

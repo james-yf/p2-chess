@@ -25,6 +25,7 @@ class Board:
         self.turn = "w"
         self.pwn_2_dest = None 
         self.result = None
+        self.font = pygame.font.SysFont("Arial", 20)
 
     def piece_at(self, sq):
         if sq is None: 
@@ -291,6 +292,12 @@ class Board:
 
         for i, row in enumerate(self.grid):
             for j, piece in enumerate(row):
+                if i == 7:
+                    text_surface = self.font.render(f"{chr(ord('a')+j)}", True, (255, 0, 0))
+                    screen.blit(text_surface, (j*SQUARE_SIZE+0.05*SQUARE_SIZE, i*SQUARE_SIZE+0.75*SQUARE_SIZE))
+                if j == 7:
+                    text_surface = self.font.render(f"{8-i}", True, (255, 0, 0))
+                    screen.blit(text_surface, (j*SQUARE_SIZE+0.85*SQUARE_SIZE, i*SQUARE_SIZE))
                 if piece:
                     screen.blit(self.piece_imgs[piece], (j*SQUARE_SIZE, i*SQUARE_SIZE))
 

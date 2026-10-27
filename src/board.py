@@ -24,6 +24,12 @@ class Board:
         self.selected_sq = None
         self.turn = "w"
         self.pwn_2_dest = None 
+        self.white_king_moved = False
+        self.white_king_rook_moved = False
+        self.white_queen_rook_moved = False
+        self.black_king_moved = False
+        self.black_king_rook_moved = False
+        self.black_queen_rook_moved = False
         self.result = None
         self.font = pygame.font.SysFont("Arial", 20)
 
@@ -132,6 +138,43 @@ class Board:
 
         return moves
 
+    def king_castle_moves(self, src_sq):
+        moves = []
+        src_row, src_col = src_sq
+
+        if self.turn == "w": 
+            if self.white_king_moved:
+                return []
+        else:
+            if self.black_king_moved:
+                return []
+
+        queen_rook_moved = self.white_queen_rook_moved if self.turn == "w" else self.black_queen_rook_moved
+        if not queen_rook_moved:
+            can_queenside_castle = True
+            for i in range(1,4):
+                if not self.is_sq_empty((src_row, src_col-i)):
+                    can_queenside_castle = False
+                    break
+
+            if can_queenside_castle:
+                moves.append((src_sq, (src_row, src_col-2)))
+
+        king_rook_moved = self.white_king_rook_moved if self.turn == "w" else self.black_king_rook_moved
+        if not king_rook_moved:
+            can_kingside_castle = True
+            for i in range(1,3):
+                # FOR SOME REASON I NEED TO USE THE SQUARE EXISTANCE CHECK HERE. NOT SURE WHY QUEENSIDE WORKS FINE
+                # WITHOUT IT, BUT YEAH.
+                if not self.does_sq_exist((src_row, src_col+i)) or not self.is_sq_empty((src_row, src_col+i)):
+                    can_kingside_castle = False
+                    break
+
+            if can_kingside_castle:
+                moves.append((src_sq, (src_row, src_col+2)))
+
+        return moves
+
     #unfiltered because it may contain pseudo moves, i.e., moves that adhere to piece's movement rules e.g., knight=L shape
     #but are not allowed in the current position as they would expose the king to check. 
     def unfiltered_moves_for_piece_at(self, sq):
@@ -154,7 +197,7 @@ class Board:
         elif kind == "Q":
             return self.slide_moves(sq, vert_and_horiz_offs + diag_offs)
         elif kind == "K":
-            return self.step_moves(sq, vert_and_horiz_offs + diag_offs)
+            return self.step_moves(sq, vert_and_horiz_offs + diag_offs) + self.king_castle_moves(sq)
         elif kind == "P":
             return self.pawn_moves(sq)
 
@@ -237,12 +280,60 @@ class Board:
 
         return src_col != pwn_2_col and dest_row in (pwn_2_row - 1, pwn_2_row + 1) and dest_col == pwn_2_col
 
+    def set_which_rook_moved(self, move):
+        src_sq = move[0]
+        # a1
+        if src_sq == (7,0):
+            self.white_queen_rook_moved = True
+        # h1
+        elif src_sq == (7,7):
+            self.white_king_rook_moved = True
+        #a8
+        elif src_sq == (0,0):
+            self.black_queen_rook_moved = True
+        #h8
+        elif src_sq == (0,7):
+            self.black_king_rook_moved = True
+
+    def is_move_castle(self, move):
+        src_sq, dest_sq = move
+        col_diff = dest_sq[1] - src_sq[1]
+        return self.piece_kind_at(src_sq) == "K" and (col_diff > 1 or col_diff < -1)
+
     def make_move(self, move):
         legal_moves = self.legal_moves_for_piece_at(move[0]) 
         if move in legal_moves:
             if self.is_move_en_passant(move):
                 self.grid[self.pwn_2_dest[0]][self.pwn_2_dest[1]] = None
                 self.pwn_2_dest = None
+
+            if self.is_move_castle(move):
+                start_row, start_col = move[0]
+                dest_row, dest_col = move[1]
+                # kingside castle
+                if dest_col - start_col > 0:
+                    king_rook_row, king_rook_col = (7,7) if self.turn == "w" else (0,7) 
+                    self.grid[dest_row][dest_col-1]= f"{self.turn}R"
+                    self.grid[king_rook_row][king_rook_col] = None
+                # queenside castle
+                else:
+                    queen_rook_row, queen_rook_col = (7,0) if self.turn == "w" else (0,0) 
+                    self.grid[dest_row][dest_col+1]= f"{self.turn}R"
+                    self.grid[queen_rook_row][queen_rook_col] = None
+
+                if self.turn == "w": 
+                    self.white_king_moved = True 
+                else:
+                    self.black_king_moved = True
+
+            if self.piece_kind_at(move[0]) == "K": 
+                if self.turn == "w": 
+                    self.white_king_moved = True 
+                else:
+                    self.black_king_moved = True
+
+            if self.piece_kind_at(move[0]) == "R": 
+                self.set_which_rook_moved(move)
 
             if self.is_move_pwn_2(move):
                 self.pwn_2_dest = move[1] 
